@@ -15,6 +15,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../hooks/useTheme';
 import PrimaryButton from '../components/PrimaryButton';
 import CustomInput from '../components/CustomInput';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -26,6 +27,7 @@ type ForgotPasswordScreenNavigationProp = StackNavigationProp<AuthStackParamList
 
 export default function ForgotPasswordScreen() {
   const { colors, typography, spacing } = useTheme();
+  const { t } = useLocalization();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -34,14 +36,14 @@ export default function ForgotPasswordScreen() {
 
   const handleResetPassword = async () => {
     if (!email) {
-      Alert.alert('Error', 'Please enter your email address');
+      Alert.alert(t('error'), t('pleaseFillAllFields'));
       return;
     }
 
     // Simple email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      Alert.alert(t('error'), t('invalidEmail'));
       return;
     }
 
@@ -50,20 +52,20 @@ export default function ForgotPasswordScreen() {
       await resetPassword(email);
       setSuccess(true);
       Alert.alert(
-        'Success',
-        'Password reset email sent! Check your inbox.',
+        t('success'),
+        t('emailSent'),
         [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
       );
     } catch (error: any) {
-      let errorMessage = 'Failed to send password reset email';
+      let errorMessage = t('failedToSendResetEmail');
       
       if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email address';
+        errorMessage = t('noUserFound');
       } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email address';
+        errorMessage = t('invalidEmail');
       }
       
-      Alert.alert('Error', errorMessage);
+      Alert.alert(t('error'), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -76,16 +78,16 @@ export default function ForgotPasswordScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>Reset Password</Text>
+          <Text style={styles.title}>{t('resetPassword')}</Text>
           <Text style={styles.subtitle}>
-            Enter your email address and we'll send you a link to reset your password
+            {t('resetPasswordSubtitle')}
           </Text>
         </View>
 
         <View style={styles.form}>
           <CustomInput
-            label="Email"
-            placeholder="Enter your email"
+            label={t('email')}
+            placeholder={t('enterYourEmail')}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -96,7 +98,7 @@ export default function ForgotPasswordScreen() {
           />
 
           <PrimaryButton
-            title={loading ? 'Sending...' : success ? 'Email Sent' : 'Send Reset Link'}
+            title={loading ? t('sending') : success ? t('emailSent') : t('sendResetLink')}
             onPress={handleResetPassword}
             loading={loading}
             disabled={loading || success}
@@ -104,7 +106,7 @@ export default function ForgotPasswordScreen() {
 
           <View style={styles.backContainer}>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.backText}>Back to Login</Text>
+              <Text style={styles.backText}>{t('backToLogin')}</Text>
             </TouchableOpacity>
           </View>
         </View>

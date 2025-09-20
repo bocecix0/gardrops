@@ -8,13 +8,16 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import PrimaryButton from '../components/PrimaryButton';
 import CustomInput from '../components/CustomInput';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -26,50 +29,76 @@ type SignupScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Signu
 
 export default function SignupScreen() {
   const { colors, typography, spacing } = useTheme();
+  const { t } = useLocalization();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp } = useAuth();
+  const [showPhoneSignup, setShowPhoneSignup] = useState(false);
+  const { signUp, loginWithGoogle } = useAuth();
   const navigation = useNavigation<SignupScreenNavigationProp>();
 
-  const handleSignup = async () => {
+  const handleEmailSignup = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('error'), t('pleaseFillAllFields'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('error'), t('passwordsDoNotMatch'));
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert(t('error'), t('passwordTooShort'));
       return;
     }
 
     setLoading(true);
     try {
       await signUp(email, password);
-      Alert.alert('Success', 'Account created successfully!', [
+      Alert.alert(t('success'), t('accountCreated'), [
         { text: 'OK', onPress: () => navigation.navigate('Login') }
       ]);
     } catch (error: any) {
-      let errorMessage = 'Failed to create account';
+      let errorMessage = t('failedToCreateAccount');
       
       if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'This email is already registered';
+        errorMessage = t('emailAlreadyInUse');
       } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email address';
+        errorMessage = t('invalidEmail');
       } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'Password is too weak';
+        errorMessage = t('weakPassword');
       }
       
-      Alert.alert('Signup Error', errorMessage);
+      Alert.alert(t('signupError'), errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      await loginWithGoogle();
+    } catch (error: any) {
+      Alert.alert(t('googleSignUpError'), error.message || t('failedToSignUpWithGoogle'));
+    }
+  };
+
+  const handlePhoneSignup = async () => {
+    Alert.alert(
+      t('phoneRegistration'),
+      t('phoneAuthInfo'),
+      [
+        {
+          text: t('learnMore'),
+          onPress: () => Linking.openURL('https://firebase.google.com/docs/auth/web/phone-auth'),
+          style: 'default'
+        },
+        { text: 'OK', style: 'cancel' }
+      ]
+    );
   };
 
   return (
@@ -79,55 +108,109 @@ export default function SignupScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join LookSee to manage your wardrobe</Text>
+          <Text style={styles.title}>{t('createAccount')}</Text>
+          <Text style={styles.subtitle}>{t('joinLookSee')}</Text>
         </View>
 
         <View style={styles.form}>
-          <CustomInput
-            label="Email"
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            icon="mail-outline"
-          />
+          {showPhoneSignup ? (
+            <>
+              <CustomInput
+                label={t('phoneNumber')}
+                placeholder={t('enterYourPhoneNumber')}
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                keyboardType="phone-pad"
+                icon="call-outline"
+              />
+              
+              <PrimaryButton
+                title={loading ? t('sendingCode') : t('sendVerificationCode')}
+                onPress={handlePhoneSignup}
+                loading={loading}
+                disabled={loading}
+              />
+              
+              <TouchableOpacity 
+                style={styles.toggleSignupMethod}
+                onPress={() => setShowPhoneSignup(false)}
+              >
+                <Text style={styles.toggleSignupMethodText}>
+                  <Ionicons name="mail-outline" size={16} color="#6366F1" /> {t('emailSignup')}
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <CustomInput
+                label={t('email')}
+                placeholder={t('enterYourEmail')}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                icon="mail-outline"
+              />
 
-          <CustomInput
-            label="Password"
-            placeholder="Create a password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            icon="lock-closed-outline"
-          />
+              <CustomInput
+                label={t('password')}
+                placeholder={t('createAPassword')}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                icon="lock-closed-outline"
+              />
 
-          <CustomInput
-            label="Confirm Password"
-            placeholder="Confirm your password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            icon="lock-closed-outline"
-          />
+              <CustomInput
+                label={t('confirmPassword')}
+                placeholder={t('confirmYourPassword')}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                icon="lock-closed-outline"
+              />
+
+              <PrimaryButton
+                title={loading ? t('creatingAccount') : t('signUp')}
+                onPress={handleEmailSignup}
+                loading={loading}
+                disabled={loading}
+              />
+              
+              <TouchableOpacity 
+                style={styles.toggleSignupMethod}
+                onPress={() => setShowPhoneSignup(true)}
+              >
+                <Text style={styles.toggleSignupMethodText}>
+                  <Ionicons name="call-outline" size={16} color="#6366F1" /> {t('phoneSignup')}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>{t('continueWith')}</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
           <PrimaryButton
-            title={loading ? 'Creating Account...' : 'Sign Up'}
-            onPress={handleSignup}
-            loading={loading}
-            disabled={loading}
+            title={t('signUpWithGoogle')}
+            onPress={handleGoogleSignUp}
+            variant="outline"
+            icon="logo-google"
+            style={styles.googleButton}
           />
 
           <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Already have an account?</Text>
+            <Text style={styles.loginText}>{t('alreadyHaveAccount')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.loginLink}> Login</Text>
+              <Text style={styles.loginLink}> {t('signIn')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -165,6 +248,25 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
   },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  dividerText: {
+    fontSize: 14,
+    color: '#64748B',
+    marginHorizontal: 16,
+    fontWeight: '500',
+  },
+  googleButton: {
+    marginBottom: 24,
+  },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -178,6 +280,15 @@ const styles = StyleSheet.create({
   loginLink: {
     color: '#6366F1',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  toggleSignupMethod: {
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  toggleSignupMethodText: {
+    color: '#6366F1',
+    fontSize: 16,
     fontWeight: '600',
   },
 });

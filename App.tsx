@@ -1,53 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { WardrobeProvider } from './src/hooks/useWardrobe';
 import { SubscriptionProvider } from './src/hooks/useSubscription';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { LocalizationProvider } from './src/contexts/LocalizationContext';
 import AppNavigator from './src/navigation/AppNavigator';
-
-// Loading screen while checking auth state
-function LoadingScreen() {
-  return (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#6366f1" />
-      <Text style={styles.loadingText}>Loading...</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5F3FF',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#6366f1',
-  },
-});
+import SplashScreen from './src/components/SplashScreen';
 
 // Main app component - always show the main app navigator
 function AppContent() {
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   useEffect(() => {
-    // Simulate a short loading time for initialization
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+    // Simulate loading progress
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(prev => {
+        const newProgress = prev + 0.1;
+        if (newProgress >= 1) {
+          clearInterval(progressInterval);
+          setTimeout(() => setLoading(false), 300);
+          return 1;
+        }
+        return newProgress;
+      });
+    }, 100);
 
-    return () => clearTimeout(timer);
+    // Cleanup interval
+    return () => clearInterval(progressInterval);
   }, []);
 
-  // Show loading screen while initializing
+  // Show splash screen while initializing
   if (loading) {
-    return <LoadingScreen />;
+    return <SplashScreen loadingProgress={loadingProgress} />;
   }
 
   // Always show the main app navigator
@@ -61,13 +49,15 @@ function AppContent() {
   );
 }
 
-// Wrap the entire app with AuthProvider
+// Wrap the entire app with AuthProvider and LocalizationProvider
 export default function App() {
   return (
-    <AuthProvider>
-      <NavigationContainer>
-        <AppContent />
-      </NavigationContainer>
-    </AuthProvider>
+    <LocalizationProvider>
+      <AuthProvider>
+        <NavigationContainer>
+          <AppContent />
+        </NavigationContainer>
+      </AuthProvider>
+    </LocalizationProvider>
   );
 }

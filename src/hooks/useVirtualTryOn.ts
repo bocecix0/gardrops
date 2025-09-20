@@ -26,6 +26,7 @@ interface VirtualTryOnParams {
   bodyType?: BodyType;
   pose?: PoseType;
   background?: BackgroundType;
+  useNanoBanana?: boolean; // Flag to use Google's Nano Banana API
 }
 
 export const useVirtualTryOn = (): UseVirtualTryOnReturn => {
@@ -39,7 +40,8 @@ export const useVirtualTryOn = (): UseVirtualTryOnReturn => {
       modelType = ModelType.CASUAL_FEMALE, 
       bodyType = BodyType.HOURGLASS,
       pose = PoseType.STANDING,
-      background = BackgroundType.STUDIO
+      background = BackgroundType.STUDIO,
+      useNanoBanana = false // Default to false, but can be set to true to use Nano Banana
     } = params;
 
     if (!outfit || !outfit.items.length) {
@@ -72,12 +74,16 @@ export const useVirtualTryOn = (): UseVirtualTryOnReturn => {
 
       let result: VirtualTryOnResult;
       
-      if (avatar) {
-        // Use personalized avatar generation
+      if (useNanoBanana) {
+        // Use Google's Nano Banana API
+        console.log('Using Google Nano Banana API for try-on');
+        result = await openAIService.generateVirtualTryOnWithNanoBanana(request);
+      } else if (avatar) {
+        // Use personalized avatar generation with DALL-E
         console.log('Using personalized avatar for try-on');
         result = await openAIService.generatePersonalizedTryOn(request);
       } else {
-        // Use generic model generation
+        // Use generic model generation with DALL-E
         console.log('Using generic model for try-on');
         result = await openAIService.generateVirtualTryOn(request);
       }
@@ -116,34 +122,4 @@ export const useVirtualTryOn = (): UseVirtualTryOnReturn => {
     error,
     clearError
   };
-};
-
-// Helper function to get recommended model type based on outfit occasion
-export const getRecommendedModelType = (outfit: Outfit, gender: 'male' | 'female' = 'female'): ModelType => {
-  const genderSuffix = gender.toUpperCase();
-  
-  switch (outfit.occasion) {
-    case 'business':
-      return gender === 'male' ? ModelType.BUSINESS_MALE : ModelType.BUSINESS_FEMALE;
-    case 'formal':
-      return gender === 'male' ? ModelType.FORMAL_MALE : ModelType.FORMAL_FEMALE;
-    default:
-      return gender === 'male' ? ModelType.CASUAL_MALE : ModelType.CASUAL_FEMALE;
-  }
-};
-
-// Helper function to get pose recommendation based on outfit occasion
-export const getRecommendedPose = (outfit: Outfit): PoseType => {
-  switch (outfit.occasion) {
-    case 'business':
-    case 'formal':
-      return PoseType.STANDING;
-    case 'sports':
-      return PoseType.WALKING;
-    case 'casual':
-    case 'vacation':
-      return PoseType.CASUAL_POSE;
-    default:
-      return PoseType.STANDING;
-  }
 };

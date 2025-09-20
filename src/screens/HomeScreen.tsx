@@ -12,13 +12,15 @@ import {
   RefreshControl,
   Image,
   Easing,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList, Occasion, Outfit, Season, HairColor, EyeColor, HairStyle, PoseType, BackgroundType, BodyType } from '../types';
+import * as ImagePicker from 'expo-image-picker';
+import { RootStackParamList, Occasion, Outfit, Season, HairColor, EyeColor, HairStyle, PoseType, BackgroundType, BodyType, SimpleAvatarProfile } from '../types';
 import { useWardrobe } from '../hooks/useWardrobe';
 import { useWeatherOutfit } from '../hooks/useWeatherOutfit';
 import { weatherService } from '../services/weather';
@@ -27,6 +29,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAuthPrompt } from '../hooks/useAuthPrompt';
 import AuthPromptModal from '../components/AuthPromptModal';
 import { useTheme } from '../hooks/useTheme';
+import { imageProcessingService } from '../services/imageProcessing';
+import { generateUniqueId } from '../utils/clothingUtils';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -44,13 +48,18 @@ export default function HomeScreen() {
     handleSignUp,
     handleClose
   } = useAuthPrompt();
-  const { state, removeClothingFromAvatar } = useWardrobe();
+  const { state, removeClothingFromAvatar, addSimpleAvatar } = useWardrobe();
   const { weather, outfitSuggestion, isLoading, isGeneratingOutfit, refreshOutfit, loadWeatherAndOutfit } = useWeatherOutfit();
   
   // Avatar image state
   const [avatarImageUri, setAvatarImageUri] = useState<string | null>(null);
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  
+  // Personalized avatar state
+  const [userPhotoUri, setUserPhotoUri] = useState<string | null>(null);
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+  const [personalizedAvatar, setPersonalizedAvatar] = useState<SimpleAvatarProfile | null>(null);
   
   // Enhanced animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -62,7 +71,6 @@ export default function HomeScreen() {
 
   // First launch animation sequence
   useEffect(() => {
-    // Initial fade in
     Animated.parallel([
       Animated.timing(headerFadeAnim, {
         toValue: 1,
@@ -98,6 +106,95 @@ export default function HomeScreen() {
       }).start();
     });
   }, []);
+
+  // Load personalized avatar when component mounts
+  useEffect(() => {
+    // Check if we have a personalized avatar in storage
+    // For now, we'll just set it if we have a simple avatar
+    if (state.simpleAvatar) {
+      setPersonalizedAvatar(state.simpleAvatar);
+    }
+  }, [state.simpleAvatar]);
+
+  // Handle taking a photo for personalized avatar
+  const handleTakePhoto = async () => {
+    try {
+      // Request camera permission
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Camera permission is needed to take photos.');
+        return;
+      }
+
+      // Launch camera
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [3, 4],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const photoUri = result.assets[0].uri;
+        setUserPhotoUri(photoUri);
+        await processUserPhoto(photoUri);
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
+    }
+  };
+
+  // Process user photo for personalized avatar
+  const processUserPhoto = async (photoUri: string) => {
+    setIsProcessingPhoto(true);
+    try {
+      // Process the image with background removal
+      const result = await imageProcessingService.processClothingImage(photoUri, undefined, true);
+      
+      if (result.processedImage) {
+        // Create personalized avatar
+        await createPersonalizedAvatar(result.processedImage);
+      } else {
+        Alert.alert('Error', 'Failed to process photo. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error processing photo:', error);
+      Alert.alert('Error', 'Failed to process photo. Please try again.');
+    } finally {
+      setIsProcessingPhoto(false);
+    }
+  };
+
+  // Create personalized avatar from processed photo
+  const createPersonalizedAvatar = async (processedPhotoUri: string) => {
+    try {
+      // Create a simple avatar profile using the processed photo
+      const avatar: SimpleAvatarProfile = {
+        id: generateUniqueId(),
+        bodyType: BodyType.RECTANGLE, // Default body type
+        gender: 'female', // Default gender
+        skinTone: 'medium' as any, // Default skin tone
+        baseImagePrompt: `A personalized avatar created from user photo with background removed`,
+        dateCreated: new Date().toISOString(),
+        isActive: true
+      };
+
+      // Save the avatar
+      const success = await addSimpleAvatar(avatar);
+      
+      if (success) {
+        setPersonalizedAvatar(avatar);
+        Alert.alert('Success', 'Your personalized avatar has been created!');
+      } else {
+        Alert.alert('Error', 'Failed to create personalized avatar. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error creating personalized avatar:', error);
+      Alert.alert('Error', 'Failed to create personalized avatar. Please try again.');
+    }
+  };
 
   // Generate avatar image when avatar or clothing changes
   useEffect(() => {
@@ -437,6 +534,14 @@ export default function HomeScreen() {
                     {state.simpleAvatar.gender.toUpperCase()} • {state.simpleAvatar.skinTone.replace('_', ' ').toUpperCase()}
                   </Text>
                 )}
+                
+                {/* Personalized Avatar Indicator */}
+                {personalizedAvatar && (
+                  <View style={styles.personalizedAvatarBadge}>
+                    <Ionicons name="camera" size={16} color="white" />
+                    <Text style={styles.personalizedAvatarText}>Personalized</Text>
+                  </View>
+                )}
               </View>
               
               {/* Current Outfit Display */}
@@ -496,11 +601,31 @@ export default function HomeScreen() {
             <View style={styles.noAvatarContainer}>
               <Ionicons name="person-add-outline" size={32} color={colors.textTertiary} />
               <Text style={styles.noAvatarText}>Create your avatar to see outfit visualizations</Text>
+              
+              {/* Personalized Avatar Creation Button */}
+              <TouchableOpacity 
+                style={[styles.createAvatarButton, { marginBottom: 15 }]}
+                onPress={handleTakePhoto}
+                disabled={isProcessingPhoto}
+              >
+                {isProcessingPhoto ? (
+                  <>
+                    <ActivityIndicator color="white" size="small" />
+                    <Text style={styles.createAvatarButtonText}>Processing Photo...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="camera" size={16} color="white" />
+                    <Text style={styles.createAvatarButtonText}>Create from My Photo</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              
               <TouchableOpacity 
                 style={styles.createAvatarButton}
                 onPress={() => (navigation as any).navigate('SimpleAvatarCreation')}
               >
-                <Text style={styles.createAvatarButtonText}>Create Avatar</Text>
+                <Text style={styles.createAvatarButtonText}>Create AI Avatar</Text>
                 <Ionicons name="arrow-forward" size={16} color="white" />
               </TouchableOpacity>
             </View>
@@ -1100,5 +1225,21 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  personalizedAvatarBadge: {
+    backgroundColor: '#6366F1',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  personalizedAvatarText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

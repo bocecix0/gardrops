@@ -8,19 +8,22 @@ import {
   Image,
   Alert,
   ActivityIndicator,
-  Dimensions
+  Dimensions,
+  Switch
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useWardrobe } from '../hooks/useWardrobe';
-import { useVirtualTryOn, getRecommendedModelType, getRecommendedPose } from '../hooks/useVirtualTryOn';
+import { useVirtualTryOn } from '../hooks/useVirtualTryOn';
 import { 
   Outfit, 
   ModelType, 
   BodyType, 
   PoseType, 
   BackgroundType,
-  VirtualTryOnResult 
+  VirtualTryOnResult,
+  ClothingCategory,
+  Occasion
 } from '../types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -32,6 +35,51 @@ interface VirtualTryOnScreenProps {
     };
   };
 }
+
+// Helper function to recommend model type based on outfit
+const getRecommendedModelType = (outfit: Outfit, gender: 'male' | 'female' = 'female'): ModelType => {
+  // Check if outfit has formal items
+  const hasFormalItems = outfit.items.some(item => 
+    item.category === ClothingCategory.DRESS || 
+    item.category === ClothingCategory.OUTERWEAR
+  );
+  
+  // Check if outfit has business items
+  const hasBusinessItems = outfit.items.some(item => 
+    item.occasion.includes(Occasion.BUSINESS) || 
+    item.category === ClothingCategory.OUTERWEAR
+  );
+  
+  if (hasFormalItems) {
+    return gender === 'male' ? ModelType.FORMAL_MALE : ModelType.FORMAL_FEMALE;
+  } else if (hasBusinessItems) {
+    return gender === 'male' ? ModelType.BUSINESS_MALE : ModelType.BUSINESS_FEMALE;
+  } else {
+    return gender === 'male' ? ModelType.CASUAL_MALE : ModelType.CASUAL_FEMALE;
+  }
+};
+
+// Helper function to recommend pose based on outfit
+const getRecommendedPose = (outfit: Outfit): PoseType => {
+  // Check if outfit has items suitable for walking pose
+  const hasActiveItems = outfit.items.some(item => 
+    item.occasion.includes(Occasion.SPORTS) || 
+    item.category === ClothingCategory.SHOES
+  );
+  
+  // Check if outfit has formal/dress items
+  const hasFormalItems = outfit.items.some(item => 
+    item.category === ClothingCategory.DRESS
+  );
+  
+  if (hasActiveItems) {
+    return PoseType.WALKING;
+  } else if (hasFormalItems) {
+    return PoseType.STANDING;
+  } else {
+    return PoseType.CASUAL_POSE;
+  }
+};
 
 const VirtualTryOnScreen: React.FC<VirtualTryOnScreenProps> = () => {
   const navigation = useNavigation();
@@ -56,6 +104,7 @@ const VirtualTryOnScreen: React.FC<VirtualTryOnScreenProps> = () => {
   const [selectedBackground, setSelectedBackground] = useState<BackgroundType>(
     BackgroundType.STUDIO
   );
+  const [useNanoBanana, setUseNanoBanana] = useState<boolean>(false); // New state for Nano Banana API
   const [generatedImage, setGeneratedImage] = useState<VirtualTryOnResult | null>(null);
 
   const handleGenerateTryOn = useCallback(async () => {
@@ -66,7 +115,8 @@ const VirtualTryOnScreen: React.FC<VirtualTryOnScreenProps> = () => {
         modelType: selectedModelType,
         bodyType: selectedBodyType,
         pose: selectedPose,
-        background: selectedBackground
+        background: selectedBackground,
+        useNanoBanana // Pass the Nano Banana flag
       });
 
       if (result) {
@@ -75,7 +125,7 @@ const VirtualTryOnScreen: React.FC<VirtualTryOnScreenProps> = () => {
     } catch (error) {
       console.error('Error generating virtual try-on:', error);
     }
-  }, [outfit, userAvatar, selectedModelType, selectedBodyType, selectedPose, selectedBackground, generateTryOn]);
+  }, [outfit, userAvatar, selectedModelType, selectedBodyType, selectedPose, selectedBackground, useNanoBanana, generateTryOn]);
 
   const renderModelTypeSelector = () => (
     <View style={styles.selectorContainer}>
@@ -177,6 +227,24 @@ const VirtualTryOnScreen: React.FC<VirtualTryOnScreenProps> = () => {
     </View>
   );
 
+  // New component for Nano Banana toggle
+  const renderNanoBananaToggle = () => (
+    <View style={styles.toggleContainer}>
+      <Text style={styles.toggleTitle}>Use Google Nano Banana API</Text>
+      <View style={styles.toggleRow}>
+        <Text style={styles.toggleDescription}>
+          Enable for advanced AI-powered virtual try-on with automatic clothing placement
+        </Text>
+        <Switch
+          value={useNanoBanana}
+          onValueChange={setUseNanoBanana}
+          trackColor={{ false: '#D1D5DB', true: '#2563EB' }}
+          thumbColor={useNanoBanana ? '#FFFFFF' : '#F9FAFB'}
+        />
+      </View>
+    </View>
+  );
+
   const renderOutfitPreview = () => (
     <View style={styles.outfitPreview}>
       <Text style={styles.outfitTitle}>{outfit.name}</Text>
@@ -203,6 +271,9 @@ const VirtualTryOnScreen: React.FC<VirtualTryOnScreenProps> = () => {
           resizeMode="contain"
         />
         <View style={styles.imageInfo}>
+          <Text style={styles.infoText}>
+            Model Used: {generatedImage.modelUsed}
+          </Text>
           <Text style={styles.infoText}>
             Confidence: {Math.round(generatedImage.confidence * 100)}%
           </Text>
@@ -261,6 +332,9 @@ const VirtualTryOnScreen: React.FC<VirtualTryOnScreenProps> = () => {
           </TouchableOpacity>
         </View>
       )}
+      
+      {/* Nano Banana Toggle */}
+      {renderNanoBananaToggle()}
       
       {/* Model/Avatar Selection - Only show if no personal avatar */}
       {!userAvatar && renderModelTypeSelector()}
@@ -418,6 +492,38 @@ const styles = StyleSheet.create({
   },
   selectedButtonText: {
     color: 'white',
+  },
+  toggleContainer: {
+    backgroundColor: 'white',
+    marginHorizontal: 24,
+    marginVertical: 10,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  toggleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  toggleDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    flex: 1,
+    marginRight: 10,
   },
   generateButton: {
     backgroundColor: '#2563EB',

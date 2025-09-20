@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../hooks/useTheme';
 import PrimaryButton from '../components/PrimaryButton';
 import CustomHeader from '../components/CustomHeader';
+import LanguageSelector from '../components/LanguageSelector';
+import { useLocalization, LANGUAGE_NAMES } from '../contexts/LocalizationContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
   const { colors, typography, spacing } = useTheme();
   const { currentUser, logout } = useAuth();
+  const { language } = useLocalization();
+  const [languageSelectorVisible, setLanguageSelectorVisible] = useState(false);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -64,6 +69,22 @@ export default function ProfileScreen() {
             </View>
           </View>
           
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Preferences</Text>
+            <View style={styles.card}>
+              <TouchableOpacity 
+                style={styles.infoRow}
+                onPress={() => setLanguageSelectorVisible(true)}
+              >
+                <Text style={styles.label}>Language</Text>
+                <View style={styles.languageRow}>
+                  <Text style={styles.value}>{LANGUAGE_NAMES[language]}</Text>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+          
           <PrimaryButton
             title="Logout"
             onPress={handleLogout}
@@ -73,6 +94,11 @@ export default function ProfileScreen() {
           />
         </View>
       </ScrollView>
+      
+      <LanguageSelector
+        visible={languageSelectorVisible}
+        onClose={() => setLanguageSelectorVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -145,6 +171,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  languageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   label: {
     fontSize: 16,
     color: '#64748B',
@@ -154,6 +184,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1E293B',
     fontWeight: '600',
+    marginRight: 8,
   },
   logoutButton: {
     marginTop: 'auto',

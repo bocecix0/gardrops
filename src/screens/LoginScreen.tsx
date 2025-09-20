@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import PrimaryButton from '../components/PrimaryButton';
 import CustomInput from '../components/CustomInput';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -27,6 +28,7 @@ type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'
 
 export default function LoginScreen() {
   const { colors, typography, spacing } = useTheme();
+  const { t } = useLocalization();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,7 +37,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('error'), t('pleaseFillAllFields'));
       return;
     }
 
@@ -43,19 +45,19 @@ export default function LoginScreen() {
     try {
       await login(email, password);
     } catch (error: any) {
-      let errorMessage = 'Failed to login';
+      let errorMessage = t('failedToLogin');
       
       if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No user found with this email';
+        errorMessage = t('noUserFound');
       } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password';
+        errorMessage = t('incorrectPassword');
       } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email address';
+        errorMessage = t('invalidEmail');
       } else if (error.code === 'auth/user-disabled') {
-        errorMessage = 'This account has been disabled';
+        errorMessage = t('accountDisabled');
       }
       
-      Alert.alert('Login Error', errorMessage);
+      Alert.alert(t('loginError'), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -65,7 +67,7 @@ export default function LoginScreen() {
     try {
       await loginWithGoogle();
     } catch (error: any) {
-      Alert.alert('Google Sign-In Error', error.message || 'Failed to sign in with Google');
+      Alert.alert(t('googleSignInError'), error.message || t('failedToSignInWithGoogle'));
     }
   };
 
@@ -80,14 +82,14 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to your LookSee account</Text>
+          <Text style={styles.title}>{t('welcomeBack')}</Text>
+          <Text style={styles.subtitle}>{t('signInToLookSee')}</Text>
         </View>
 
         <View style={styles.form}>
           <CustomInput
-            label="Email"
-            placeholder="Enter your email"
+            label={t('email')}
+            placeholder={t('enterYourEmail')}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -97,8 +99,8 @@ export default function LoginScreen() {
           />
 
           <CustomInput
-            label="Password"
-            placeholder="Enter your password"
+            label={t('password')}
+            placeholder={t('enterYourPassword')}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -111,11 +113,11 @@ export default function LoginScreen() {
             style={styles.forgotPasswordButton}
             onPress={handlePasswordReset}
           >
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            <Text style={styles.forgotPasswordText}>{t('forgotPassword')}</Text>
           </TouchableOpacity>
 
           <PrimaryButton
-            title={loading ? 'Logging in...' : 'Login'}
+            title={loading ? t('loggingIn') : t('signIn')}
             onPress={handleLogin}
             loading={loading}
             disabled={loading}
@@ -124,12 +126,12 @@ export default function LoginScreen() {
 
           <View style={styles.dividerContainer}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or continue with</Text>
+            <Text style={styles.dividerText}>{t('continueWith')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           <PrimaryButton
-            title="Sign in with Google"
+            title={t('signInWithGoogle')}
             onPress={handleGoogleSignIn}
             variant="outline"
             icon="logo-google"
@@ -137,9 +139,9 @@ export default function LoginScreen() {
           />
 
           <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account?</Text>
+            <Text style={styles.signupText}>{t('dontHaveAccount')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-              <Text style={styles.signupLink}> Sign Up</Text>
+              <Text style={styles.signupLink}> {t('signUp')}</Text>
             </TouchableOpacity>
           </View>
         </View>

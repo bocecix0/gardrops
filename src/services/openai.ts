@@ -16,6 +16,7 @@ import {
   PersonalizedAvatar
 } from '../types';
 import * as FileSystem from 'expo-file-system';
+import { googleNanoBananaService } from './googleNanoBanana';
 
 interface OpenAIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -649,6 +650,21 @@ Tags: ${item.tags.join(', ')}` : ''}
     } catch (error) {
       console.error('Virtual try-on generation failed:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Generate virtual try-on using Google's Nano Banana API (fallback option)
+   */
+  async generateVirtualTryOnWithNanoBanana(request: VirtualTryOnRequest): Promise<VirtualTryOnResult> {
+    try {
+      // Try to use Google's Nano Banana API
+      console.log('Attempting to use Google Nano Banana API for virtual try-on');
+      return await googleNanoBananaService.generateVirtualTryOn(request);
+    } catch (error) {
+      console.error('Google Nano Banana API failed, falling back to DALL-E:', error);
+      // Fallback to DALL-E if Nano Banana fails
+      return await this.generateVirtualTryOn(request);
     }
   }
 
