@@ -31,8 +31,9 @@ export default function WelcomeScreen() {
           style={styles.languageButton}
           onPress={() => setLanguageSelectorVisible(true)}
         >
+          <Ionicons name="language" size={20} color={colors.primary} />
           <Text style={styles.languageText}>{LANGUAGE_NAMES[language]}</Text>
-          <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
+          <Ionicons name="chevron-down" size={16} color={colors.primary} />
         </TouchableOpacity>
       </View>
       
@@ -108,16 +109,24 @@ const styles = StyleSheet.create({
   languageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   languageText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#6366F1',
     fontWeight: '600',
-    marginRight: 4,
+    marginHorizontal: 8,
   },
   content: {
     flex: 1,

@@ -73,14 +73,14 @@ export default function ProfileScreen() {
             <Text style={styles.sectionTitle}>Preferences</Text>
             <View style={styles.card}>
               <TouchableOpacity 
-                style={styles.infoRow}
+                style={styles.languageRow}
                 onPress={() => setLanguageSelectorVisible(true)}
               >
-                <Text style={styles.label}>Language</Text>
-                <View style={styles.languageRow}>
+                <View style={styles.languageInfo}>
+                  <Text style={styles.label}>Language</Text>
                   <Text style={styles.value}>{LANGUAGE_NAMES[language]}</Text>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </View>
+                <Ionicons name="chevron-forward" size={24} color={colors.primary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -154,7 +154,6 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: 'white',
     borderRadius: 16,
-    padding: 20,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -170,21 +169,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
   languageRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+  },
+  languageInfo: {
+    flexDirection: 'column',
   },
   label: {
     fontSize: 16,
     color: '#64748B',
     fontWeight: '500',
+    marginBottom: 4,
   },
   value: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#1E293B',
     fontWeight: '600',
-    marginRight: 8,
   },
   logoutButton: {
     marginTop: 'auto',

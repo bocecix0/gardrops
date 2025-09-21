@@ -17,7 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import PrimaryButton from '../components/PrimaryButton';
 import CustomInput from '../components/CustomInput';
-import { useLocalization } from '../contexts/LocalizationContext';
+import { useLocalization, LANGUAGE_NAMES } from '../contexts/LocalizationContext';
+import LanguageSelector from '../components/LanguageSelector';
 
 type AuthStackParamList = {
   Login: undefined;
@@ -29,13 +30,14 @@ type SignupScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Signu
 
 export default function SignupScreen() {
   const { colors, typography, spacing } = useTheme();
-  const { t } = useLocalization();
+  const { t, language } = useLocalization();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPhoneSignup, setShowPhoneSignup] = useState(false);
+  const [languageSelectorVisible, setLanguageSelectorVisible] = useState(false);
   const { signUp, loginWithGoogle } = useAuth();
   const navigation = useNavigation<SignupScreenNavigationProp>();
 
@@ -107,9 +109,20 @@ export default function SignupScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{t('createAccount')}</Text>
-          <Text style={styles.subtitle}>{t('joinLookSee')}</Text>
+        <View style={styles.headerContainer}>
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.languageButton}
+              onPress={() => setLanguageSelectorVisible(true)}
+            >
+              <Ionicons name="language" size={20} color={colors.primary} />
+              <Text style={styles.languageText}>{LANGUAGE_NAMES[language]}</Text>
+              <Ionicons name="chevron-down" size={16} color={colors.primary} />
+            </TouchableOpacity>
+            
+            <Text style={styles.title}>{t('createAccount')}</Text>
+            <Text style={styles.subtitle}>{t('joinLookSee')}</Text>
+          </View>
         </View>
 
         <View style={styles.form}>
@@ -215,6 +228,11 @@ export default function SignupScreen() {
           </View>
         </View>
       </ScrollView>
+      
+      <LanguageSelector
+        visible={languageSelectorVisible}
+        onClose={() => setLanguageSelectorVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -229,9 +247,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
+  headerContainer: {
+    alignItems: 'center',
+  },
   header: {
+    width: '100%',
     alignItems: 'center',
     marginBottom: 40,
+  },
+  languageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    alignSelf: 'flex-end',
+    marginBottom: 20,
+  },
+  languageText: {
+    fontSize: 16,
+    color: '#6366F1',
+    fontWeight: '600',
+    marginHorizontal: 8,
   },
   title: {
     fontSize: 32,

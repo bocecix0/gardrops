@@ -31,7 +31,7 @@ export default function LanguageSelector({ visible, onClose, onLanguageChange }:
           {languageNames[item]}
         </Text>
         {isSelected && (
-          <Ionicons name="checkmark" size={24} color={colors.primary} />
+          <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
         )}
       </TouchableOpacity>
     );
@@ -45,10 +45,10 @@ export default function LanguageSelector({ visible, onClose, onLanguageChange }:
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+        <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.textPrimary }]}>Select Language</Text>
-            <TouchableOpacity onPress={onClose}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
@@ -58,6 +58,7 @@ export default function LanguageSelector({ visible, onClose, onLanguageChange }:
             renderItem={renderLanguageItem}
             keyExtractor={(item) => item}
             style={styles.languageList}
+            showsVerticalScrollIndicator={false}
           />
         </View>
       </View>
@@ -76,16 +77,30 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: 20,
     maxHeight: '50%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 12,
+    },
+    shadowOpacity: 0.58,
+    shadowRadius: 16.00,
+    elevation: 24,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
+  },
+  closeButton: {
+    padding: 5,
   },
   languageList: {
     flex: 1,
@@ -94,13 +109,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    marginBottom: 10,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   languageText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '500',
   },
 });
