@@ -18,6 +18,7 @@ import SubscriptionScreen from '../screens/SubscriptionScreen';
 import SocialSharingScreen from '../screens/SocialSharingScreen';
 import SharedItemsScreen from '../screens/SharedItemsScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
+import AvatarSelectionScreen from '../screens/AvatarSelectionScreen';
 
 // Import auth screens
 import LoginScreen from '../screens/LoginScreen';
@@ -77,7 +78,6 @@ function TabNavigator() {
         },
         headerShown: false, // Hide header for all tab screens
       })}
-      tabBarPosition="top" // Move tab bar to the top
     >
       <Tab.Screen 
         name="Home" 
@@ -118,6 +118,11 @@ export default function AppNavigator() {
       <Stack.Screen 
         name="Welcome" 
         component={WelcomeScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="AvatarSelection" 
+        component={AvatarSelectionScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen 

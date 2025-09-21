@@ -262,6 +262,7 @@ export * from './social';
 // Navigation types
 export type RootStackParamList = {
   Welcome: undefined;
+  AvatarSelection: undefined;
   Home: undefined;
   Wardrobe: undefined;
   Suggestions: { occasion?: Occasion };

@@ -49,7 +49,7 @@ export default function WelcomeScreen() {
         
         <PrimaryButton
           title={t('getStarted')}
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigation.navigate('AvatarSelection')}
           icon="arrow-forward"
           style={styles.continueButton}
         />
